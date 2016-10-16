@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="ScaleLayout">
+
+        <attr name="state">
+            <flag name="open" value="0" />
+            <flag name="close" value="1" />
+        </attr>
+
+        <attr name="suggestScaleEnable" format="boolean"/>
+        <attr name="slideUpOrDownEnable" format="boolean"/>
+        <attr name="slideScaleEnable" format="boolean"/>
+    </declare-styleable>
+</resources>
