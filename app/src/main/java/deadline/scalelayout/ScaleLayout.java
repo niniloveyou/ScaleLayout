@@ -183,7 +183,9 @@ public class ScaleLayout extends FrameLayout{
      * @return
      */
     private float getSuggestScale(){
-        int height = getPaddingTop() + getPaddingBottom();
+
+        int height = 0;
+
         if(mTopView != null){
             height += mTopView.getMeasuredHeight();
         }
@@ -191,7 +193,7 @@ public class ScaleLayout extends FrameLayout{
         if(mBottomView != null){
             height += mBottomView.getMeasuredHeight();
         }
-        return 1 - height * 1f / getMeasuredHeight();
+        return 1 - height * 1f / (getMeasuredHeight() - getPaddingTop() - getPaddingBottom());
     }
 
 
@@ -361,23 +363,32 @@ public class ScaleLayout extends FrameLayout{
 
         //setPivotX setPivotY 注意 padding, 做如下处理否则可能不居中
         mCenterView.setPivotX((getMeasuredWidth() - getPaddingLeft() - getPaddingRight()) / 2f);
-
+        float pivotY = 0;
         if(mTopView == null && mBottomView != null) {
-            mCenterView.setPivotY(0);
+
+            pivotY = 0;
 
         }else if(mBottomView == null && mTopView != null){
 
-            mCenterView.setPivotY(getMeasuredHeight());
+            pivotY = getMeasuredHeight() - getPaddingBottom() - getPaddingTop();
 
         }else if(mTopView == null && mBottomView == null){
 
-            mCenterView.setPivotY((getMeasuredHeight() - getPaddingTop() - getPaddingBottom()) / 2f);
+            pivotY = (getMeasuredHeight() - getPaddingTop() - getPaddingBottom()) / 2f;
 
         }else{
-            mCenterView.setPivotY((getMeasuredHeight() + mTopViewMoveDistance - mBottomViewMoveDistance
-                    - getPaddingBottom() - getPaddingTop()) / 2f);
 
+            int totalDistance = mTopViewMoveDistance + mBottomViewMoveDistance;
+            int temp = getMeasuredHeight() - getPaddingBottom() - getPaddingTop() - totalDistance;
+            if(totalDistance != 0) {
+                pivotY = temp * mTopViewMoveDistance / totalDistance;
+            }
+
+            pivotY = totalDistance;
         }
+
+        Log.d(TAG, "pivotY : " + pivotY);
+        mCenterView.setPivotY(pivotY);
         mCenterView.setScaleX(scale);
         mCenterView.setScaleY(scale);
 
@@ -433,10 +444,14 @@ public class ScaleLayout extends FrameLayout{
             throw new IllegalStateException("ScaleLayout should have one direct child at least !");
         }
 
+        LayoutParams lp = (FrameLayout.LayoutParams)mCenterView.getLayoutParams();
+        lp.gravity &= Gravity.CENTER;
+        mCenterView.setLayoutParams(lp);
+
         //hide topView and bottomView
         //set the topView on the top of ScaleLayout
         if(mTopView != null){
-            LayoutParams lp = (FrameLayout.LayoutParams)mTopView.getLayoutParams();
+            lp = (FrameLayout.LayoutParams)mTopView.getLayoutParams();
             lp.gravity &= Gravity.TOP;
             mTopView.setLayoutParams(lp);
             mTopView.setAlpha(0);
@@ -444,7 +459,7 @@ public class ScaleLayout extends FrameLayout{
 
         //set the bottomView on the bottom of ScaleLayout
         if(mBottomView != null){
-            LayoutParams lp = (FrameLayout.LayoutParams)mBottomView.getLayoutParams();
+            lp = (FrameLayout.LayoutParams)mBottomView.getLayoutParams();
             lp.gravity &= Gravity.BOTTOM;
             mBottomView.setLayoutParams(lp);
             mBottomView.setAlpha(0);
@@ -493,96 +508,20 @@ public class ScaleLayout extends FrameLayout{
         }
     }
 
-    private boolean isBeingScaled(){
-        return mCurrentScale > mMinScale && mCurrentScale < 1f;
-    }
-
     /**
-     * 判断是否坐标点点击在view上
-     * @param view
-     * @param x
-     * @param y
-     * @return
-     */
-    private boolean isViewUnder(View view, int x, int y, int width, int height) {
-        if (view == null) return false;
-        int[] viewLocation = new int[2];
-        view.getLocationOnScreen(viewLocation);
-        int[] parentLocation = new int[2];
-        this.getLocationOnScreen(parentLocation);
-        int screenX = parentLocation[0] + x;
-        int screenY = parentLocation[1] + y;
-        return screenX >= viewLocation[0] && screenX < viewLocation[0] + width &&
-                screenY >= viewLocation[1] && screenY < viewLocation[1] + height;
-    }
-
-    private boolean isViewUnder(View view, int x, int y) {
-        return isViewUnder(view, x, y, view.getWidth(), view.getHeight());
-    }
-
-    /**
-     * 1.关闭状态下：
-     *          在这种状况下，mCenterView占据整个ScaleLayout（宽高相同）
-     *          所以在mSlideScaleEnable = true的情况下，if（）条件必然是true
-     *
-     *          ACTION_DOWN  所以ACTION_DOWN记录点击的X, Y值，并触发onTouchEvent的ACTION_DOWN事件
-     *                      然后return super.dispatchTouchEvent(ev) -> onInterceptTouchEvent
-     *
-     *          ACTION_MOVE 如果满足Y方向的位移距离大于X方向的位移距离，并且Y方向的位移距离大于touchSlop
-     *          直接触发onTouchEvent的ACTION_MOVE事件，否则触发onInterceptTouchEvent的ACTION_MOVE事件
-     *          把ACTION_MOVE事件分发给子View
-     *
-     *          ACTION_UP  Y和X方向的位移距离都<=touchSlop的情况下，直接触发onInterceptTouchEvent的ACTION_UP事件
-     *          否则，先触发onTouchEvent的ACTION_UP事件再触发onInterceptTouchEvent的ACTION_UP事件，
-     *          否则松手后mCurrentScale可能会卡在 mMinScale 和 1f之间的一个值，导致UI显示不正确。
-     *
-     * 2.开启状态下：
-     *
+     * 所有的down事件都不拦截，因此接下来的move, up事件，
+     * 都会先执行onInterceptTouchEvent的（move, up）
+     * 继而分发给子view的dispatchTouchEvent(move, up)，
+     * 然后在onInterceptTouchEvent（move）事件中判断是否满足滑动条件
+     * 满足就拦截，拦截了之后move up事件就会都分发给OnTouchEvent, 否则如上继续分发给子V
      * @param ev
      * @return
      */
     @Override
-    public boolean dispatchTouchEvent(MotionEvent ev) {
-
-         if(mSlideScaleEnable
-                 && isViewUnder(mCenterView, (int)mInitialMotionX, (int)mInitialMotionY,
-                        (int)(mCenterView.getWidth() * mCurrentScale),
-                        (int)(mCenterView.getHeight() * mCurrentScale))){
-
-             final float deltaX = Math.abs(ev.getX() - mInitialMotionX);
-             final float deltaY = Math.abs(ev.getY() - mInitialMotionY);
-
-             switch (ev.getActionMasked()){
-                 case MotionEvent.ACTION_DOWN:
-
-                     mInitialMotionX = ev.getX();
-                     mInitialMotionY = ev.getY();
-
-                     onTouchEvent(ev);
-                     break;
-                 case MotionEvent.ACTION_MOVE:
-                     if (deltaY > deltaX && deltaY > mTouchSlop) {
-                         return onTouchEvent(ev);
-                     }
-                     break;
-                 case MotionEvent.ACTION_UP:
-                     if (!(deltaY <= mTouchSlop && deltaX <= mTouchSlop)){
-                         onTouchEvent(ev);
-                     }
-                     break;
-             }
-
-         }
-
-        return super.dispatchTouchEvent(ev);
-    }
-
-
-    @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
         boolean intercept = false;
 
-        if (!isEnabled() || isBeingScaled()) {
+        if (!isEnabled()) {
             return true;
         }
 
@@ -595,28 +534,17 @@ public class ScaleLayout extends FrameLayout{
 
         switch (ev.getAction()) {
             case MotionEvent.ACTION_DOWN:
+                onTouchEvent(ev);
                 mInitialMotionX = ev.getX();
                 mInitialMotionY = ev.getY();
-
-                //点击位置在topView || mBottomView上，并且是关闭状态下拦截
-                //因为被覆盖的情况下不需要点击事件等
-                intercept = (isViewUnder(mBottomView, (int)mInitialMotionX, (int)mInitialMotionY)
-                            || isViewUnder(mTopView, (int)mInitialMotionX, (int)mInitialMotionY))
-                            && mCurrentScale == 1f;
                 break;
 
             case MotionEvent.ACTION_MOVE:
                 intercept = (deltaY > deltaX && deltaY > mTouchSlop);
                 break;
-
-            case MotionEvent.ACTION_UP:
-            case MotionEvent.ACTION_CANCEL:
-                intercept  = !(deltaY <= mTouchSlop && deltaX <= mTouchSlop);
-                break;
         }
         return intercept;
     }
-
     /**
      * 该方法中只实现了上滑缩小功能
      * @param ev

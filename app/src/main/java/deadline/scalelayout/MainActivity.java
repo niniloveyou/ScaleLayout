@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -21,9 +22,7 @@ public class MainActivity extends AppCompatActivity {
 
     MultiViewPager mViewPager;
     TextView mTop;
-    //TextView mBottom;
     HorizontalScrollView mBottom;
-    View mCenterView;
     ScaleLayout mScaleLayout;
 
     @Override
@@ -40,8 +39,8 @@ public class MainActivity extends AppCompatActivity {
         List<View> views = new ArrayList<>();
         for (int i = 0; i < 2; i++) {
             View v = getLayoutInflater().inflate(R.layout.volite_item_view, null, false);
-            ImageView iv = (ImageView) v.findViewById(R.id.child_view);
-            iv.setOnClickListener(new View.OnClickListener() {
+            FrameLayout frameLayout = (FrameLayout) v.findViewById(R.id.child_view);
+            frameLayout.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     Toast.makeText(MainActivity.this, "viewpager image clicked!", Toast.LENGTH_SHORT).show();
@@ -54,7 +53,6 @@ public class MainActivity extends AppCompatActivity {
         mViewPager.setAdapter(mAdapter);
 
         mScaleLayout = (ScaleLayout) findViewById(R.id.scalelayout);
-        mScaleLayout.setMinScale(0.6f);
         mScaleLayout.setSuggestScaleEnable(true);
         mScaleLayout.setSlideScaleEnable(true);
         mScaleLayout.setSlideUpOrDownEnable(true);
@@ -82,20 +80,5 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this, "bottom imageView clicked!", Toast.LENGTH_SHORT).show();
             }
         });
-        /*mBottom = (TextView) findViewById(R.id.scaleLayout_bottom);
-        mBottom.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(MainActivity.this, "bottom view clicked!", Toast.LENGTH_SHORT).show();
-            }
-        });
-*//*
-        mCenterView = findViewById(R.id.scaleLayout_center);
-        mCenterView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Toast.makeText(MainActivity.this, "center view clicked!", Toast.LENGTH_SHORT).show();
-            }
-        });*/
     }
 }
