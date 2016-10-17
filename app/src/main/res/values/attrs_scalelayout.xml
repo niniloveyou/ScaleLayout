@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
+    <item type="id" name="scaleLayout_top" />
+    <item type="id" name="scaleLayout_center" />
+    <item type="id" name="scaleLayout_bottom" />
+
     <declare-styleable name="ScaleLayout">
 
         <attr name="state">

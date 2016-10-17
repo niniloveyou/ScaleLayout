@@ -29,7 +29,7 @@ public class ScaleLayout extends FrameLayout{
      */
     private static final float DEFAULT_MIN_SCALE = 0.7f;
 
-    private static final int DEFAULT_DURATION = 1200;
+    private static final int DEFAULT_DURATION = 1000;
 
     public static final int STATE_OPEN = 0;
 
@@ -64,7 +64,7 @@ public class ScaleLayout extends FrameLayout{
     private int mState = STATE_CLOSE;
 
 
-    private View mTopView, mBottomView, mCenterView;
+    protected View mTopView, mBottomView, mCenterView;
 
 
     /**
@@ -87,7 +87,9 @@ public class ScaleLayout extends FrameLayout{
      */
     private float mSlopLength = 0;
 
+    private int mPointerId;
     private float downY;
+    private float mCurrentY;
     private float mInitialMotionX, mInitialMotionY;
 
 
@@ -253,8 +255,14 @@ public class ScaleLayout extends FrameLayout{
         if(!animationEnable)
         {
             if(state == STATE_CLOSE){
+                mSlopLength = 0;
                 mCurrentScale = 1;
             }else{
+                if(mSlideUpOrDownEnable) {
+                    mSlopLength = -getMeasuredHeight() * (1 - mMinScale) * 1.25f;
+                }else{
+                    mSlopLength = getMeasuredHeight() * (1 - mMinScale) * 1.25f;
+                }
                 mCurrentScale = mMinScale;
             }
             doSetScale();
@@ -268,10 +276,16 @@ public class ScaleLayout extends FrameLayout{
 
             if(state == STATE_CLOSE && mCurrentScale != 1){
 
+                mSlopLength = 0;
                 animator = getAnimator(mCurrentScale, 1f);
 
             }else if(state == STATE_OPEN && mCurrentScale != mMinScale){
 
+                if(mSlideUpOrDownEnable) {
+                    mSlopLength = -getMeasuredHeight() * (1 - mMinScale) * 1.25f;
+                }else{
+                    mSlopLength = getMeasuredHeight() * (1 - mMinScale) * 1.25f;
+                }
                 animator = getAnimator(mCurrentScale, mMinScale);
             }
 
@@ -361,8 +375,19 @@ public class ScaleLayout extends FrameLayout{
      */
     public void doSetCenterView(float scale){
 
-        //setPivotX setPivotY 注意 padding, 做如下处理否则可能不居中
-        mCenterView.setPivotX((getMeasuredWidth() - getPaddingLeft() - getPaddingRight()) / 2f);
+        mCenterView.setPivotX(getPivotX());
+        mCenterView.setPivotY(getPivotY());
+
+        mCenterView.setScaleX(scale);
+        mCenterView.setScaleY(scale);
+
+    }
+
+    public float getCenterViewPivotX(){
+        return (getMeasuredWidth() - getPaddingLeft() - getPaddingRight()) / 2f;
+    }
+
+    public float getCenterViewPivotY(){
         float pivotY = 0;
         if(mTopView == null && mBottomView != null) {
 
@@ -385,11 +410,10 @@ public class ScaleLayout extends FrameLayout{
             }
         }
 
-        Log.d(TAG, "pivotY : " + pivotY);
-        mCenterView.setPivotY(pivotY);
-        mCenterView.setScaleX(scale);
-        mCenterView.setScaleY(scale);
-
+        if(BuildConfig.DEBUG) {
+            Log.d(TAG, "pivotY : " + pivotY);
+        }
+        return pivotY;
     }
 
     /**
@@ -466,6 +490,7 @@ public class ScaleLayout extends FrameLayout{
         setState(mState, false);
     }
 
+
     /**
      * 使得centerView 大小等同ScaleLayout的大小
      * 如果不想这样处理，也可以在触摸事件中使用TouchDelegate
@@ -526,10 +551,6 @@ public class ScaleLayout extends FrameLayout{
         if(!mSlideScaleEnable){
             return false;
         }
-
-        final float deltaX = Math.abs(ev.getX() - mInitialMotionX);
-        final float deltaY = Math.abs(ev.getY() - mInitialMotionY);
-
         switch (ev.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 onTouchEvent(ev);
@@ -538,34 +559,41 @@ public class ScaleLayout extends FrameLayout{
                 break;
 
             case MotionEvent.ACTION_MOVE:
-                intercept = (deltaY > deltaX && deltaY > mTouchSlop);
+                final float deltaX = Math.abs(ev.getX() - mInitialMotionX);
+                final float deltaY = Math.abs(ev.getY() - mInitialMotionY);
+                intercept = deltaY > deltaX && deltaY > mTouchSlop;
                 break;
         }
         return intercept;
     }
+
     /**
-     * 该方法中只实现了上滑缩小功能
+     * 该方法中实现了
+     * 上滑缩小下滑放大功能
+     * 也可设置为 上滑放大下滑缩小
      * @param ev
      * @return
      */
     @Override
-    public boolean onTouchEvent(MotionEvent ev) {
+    public boolean onTouchEvent(MotionEvent ev)  {
 
         if (!isEnabled() || !mSlideScaleEnable) {
             return super.onTouchEvent(ev);
         }
 
-        switch (ev.getAction()){
+        switch (ev.getActionMasked()){
 
             case MotionEvent.ACTION_DOWN:
+                mPointerId = ev.getPointerId(0);
                 downY = ev.getY();
                 return true;
 
             case MotionEvent.ACTION_MOVE:
+                final int pointerIndex = ev.findPointerIndex(mPointerId);
+                mCurrentY = ev.getY(pointerIndex);
+                if(Math.abs(mCurrentY - downY) > mTouchSlop){
 
-                if(Math.abs(ev.getY() - downY) > mTouchSlop){
-
-                    mSlopLength += (ev.getY() - downY);
+                    mSlopLength += (mCurrentY - downY);
 
                     float scale;
                     if(mSlideUpOrDownEnable) {
@@ -581,7 +609,7 @@ public class ScaleLayout extends FrameLayout{
 
                     doSetScale();
 
-                    downY = ev.getY();
+                    downY = mCurrentY;
                 }
                 break;
             case MotionEvent.ACTION_UP:
@@ -592,16 +620,27 @@ public class ScaleLayout extends FrameLayout{
 
                     if(mCurrentScale >= mMinScale + half){
 
-                        mSlopLength = 0;
                         setState(STATE_CLOSE, true);
                     }else{
-                        if(mSlideUpOrDownEnable) {
-                            mSlopLength = -getMeasuredHeight() * (1 - mMinScale) * 1.25f;
-                        }else{
-                            mSlopLength = getMeasuredHeight() * (1 - mMinScale) * 1.25f;
-                        }
+
                         setState(STATE_OPEN, true);
                     }
+                }
+                break;
+
+            case MotionEvent.ACTION_POINTER_UP:
+
+                // 获取离开屏幕的手指的索引
+                int pointerIndexLeave = ev.getActionIndex();
+                int pointerIdLeave = ev.getPointerId(pointerIndexLeave);
+                if (mPointerId == pointerIdLeave) {
+
+                    // 离开屏幕的正是目前的有效手指,需要重新调整
+                    int reIndex = pointerIndexLeave == 0 ? 1 : 0;
+                    mPointerId = ev.getPointerId(reIndex);
+
+                    // 调整触摸位置，防止出现跳动
+                    mCurrentY = ev.getY(reIndex);
                 }
                 break;
         }

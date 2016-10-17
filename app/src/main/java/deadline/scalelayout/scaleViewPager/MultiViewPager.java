@@ -1,4 +1,4 @@
-package deadline.scalelayout;
+package deadline.scalelayout.scaleViewPager;
 
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -6,6 +6,8 @@ import android.graphics.Point;
 import android.support.v4.view.ViewPager;
 import android.util.AttributeSet;
 import android.view.View;
+
+import deadline.scalelayout.R;
 
 public class MultiViewPager extends ViewPager {
 

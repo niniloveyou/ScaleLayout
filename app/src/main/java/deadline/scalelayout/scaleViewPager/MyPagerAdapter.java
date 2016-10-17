@@ -3,7 +3,7 @@
  * 
  * @time 2015/05/28
  */
-package deadline.scalelayout;
+package deadline.scalelayout.scaleViewPager;
 
 import android.support.v4.view.PagerAdapter;
 import android.view.View;
