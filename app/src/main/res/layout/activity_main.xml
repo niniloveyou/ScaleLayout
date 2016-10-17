@@ -20,7 +20,7 @@
         android:padding="20dp"
         android:textColor="@android:color/white"
         android:layout_width="match_parent"
-        android:layout_height="40dp" />
+        android:layout_height="20dp" />
 
 
     <HorizontalScrollView

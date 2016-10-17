@@ -379,12 +379,10 @@ public class ScaleLayout extends FrameLayout{
         }else{
 
             int totalDistance = mTopViewMoveDistance + mBottomViewMoveDistance;
-            int temp = getMeasuredHeight() - getPaddingBottom() - getPaddingTop() - totalDistance;
+            int temp = getMeasuredHeight() - getPaddingBottom() - getPaddingTop();
             if(totalDistance != 0) {
                 pivotY = temp * mTopViewMoveDistance / totalDistance;
             }
-
-            pivotY = totalDistance;
         }
 
         Log.d(TAG, "pivotY : " + pivotY);
