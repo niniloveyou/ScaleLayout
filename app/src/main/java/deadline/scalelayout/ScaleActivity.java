@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import deadline.scalelayout.scaleViewPager.MultiViewPager;
-import deadline.scalelayout.scaleViewPager.MyPagerAdapter;
 
 public class ScaleActivity extends AppCompatActivity {
 
@@ -41,8 +40,13 @@ public class ScaleActivity extends AppCompatActivity {
 
         mScaleLayout = (ScaleLayout) findViewById(R.id.scale_layout);
         mScaleLayout.setSuggestScaleEnable(true);
-        //mScaleLayout.setMinScale(0.5f);
         touchImageView = (TouchImageView) findViewById(R.id.scaleLayout_center);
+        mScaleLayout.setOnGetCanScaleListener(new ScaleLayout.OnGetCanScaleListener() {
+            @Override
+            public boolean onGetCanScale(boolean isScrollDown) {
+                return !touchImageView.isZoomed();
+            }
+        });
 
         mTop = (TextView) findViewById(R.id.scaleLayout_top);
         mTop.setOnClickListener(new View.OnClickListener() {

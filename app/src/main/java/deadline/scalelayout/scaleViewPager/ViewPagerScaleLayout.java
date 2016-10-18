@@ -37,8 +37,8 @@ public class ViewPagerScaleLayout extends ScaleLayout{
     @Override
     public void doSetCenterView(float scale) {
         if(viewPager != null) {
-            viewPager.setPivotX(getPivotX());
-            viewPager.setPivotY(getPivotY());
+            viewPager.setPivotX(getCenterViewPivotX());
+            viewPager.setPivotY(getCenterViewPivotY());
 
             viewPager.setScaleY(scale);
         }

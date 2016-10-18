@@ -15,6 +15,7 @@ import java.util.List;
 
 import deadline.scalelayout.R;
 import deadline.scalelayout.ScaleLayout;
+import deadline.scalelayout.TouchImageView;
 
 public class ScaleViewPagerActivity extends AppCompatActivity {
 
@@ -40,24 +41,17 @@ public class ScaleViewPagerActivity extends AppCompatActivity {
 
         mViewPager = (MultiViewPager) findViewById(R.id.scaleLayout_center);
         List<View> views = new ArrayList<>();
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 3; i++) {
             View v = getLayoutInflater().inflate(R.layout.viewpager_item_view, null, false);
-            ImageView iv = (ImageView) v.findViewById(R.id.child_image);
+            TouchImageView iv = (TouchImageView) v.findViewById(R.id.child_image);
 
-            if(i % 2 == 0){
+            if(i == 0){
                 iv.setImageResource(R.mipmap.image_1);
-            }else if(i % 3 == 0){
+            }else if(i == 1){
                 iv.setImageResource(R.mipmap.image_2);
             }else{
                 iv.setImageResource(R.mipmap.image_3);
             }
-
-            iv.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    showToast("viewpager image clicked!");
-                }
-            });
             views.add(v);
         }
 
@@ -73,6 +67,15 @@ public class ScaleViewPagerActivity extends AppCompatActivity {
                     View view  = mViewPager.getChildAt(i);
                     view.setScaleX(currentScale);
                 }
+            }
+        });
+
+        mScaleLayout.setOnGetCanScaleListener(new ScaleLayout.OnGetCanScaleListener() {
+            @Override
+            public boolean onGetCanScale(boolean isScrollDown) {
+                int currentItem = mViewPager.getCurrentItem();
+                TouchImageView imageView = (TouchImageView)mViewPager.getChildAt(currentItem).findViewById(R.id.child_image);
+                return !imageView.isZoomed();
             }
         });
 

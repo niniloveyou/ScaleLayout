@@ -10,12 +10,10 @@
         android:layout_height="wrap_content"
         android:layout_centerInParent="true" >
 
-        <ImageView
+        <deadline.scalelayout.TouchImageView
             android:id="@+id/child_image"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginLeft="16dp"
-            android:layout_marginRight="16dp"
             android:scaleType="centerInside"
             tools:ignore="ContentDescription" />
     </FrameLayout>

@@ -87,9 +87,7 @@ public class ScaleLayout extends FrameLayout{
      */
     private float mSlopLength = 0;
 
-    private int mPointerId;
     private float downY;
-    private float mCurrentY;
     private float mInitialMotionX, mInitialMotionY;
 
 
@@ -98,6 +96,8 @@ public class ScaleLayout extends FrameLayout{
      * 或变小（scale = mMinScale）的动画
      */
     ValueAnimator animator;
+
+    private OnGetCanScaleListener mCanScaleListener;
 
     /**
      * scale变化的监听器
@@ -235,6 +235,10 @@ public class ScaleLayout extends FrameLayout{
         if(listener != null){
             mStateListenerList.add(listener);
         }
+    }
+
+    public void setOnGetCanScaleListener(OnGetCanScaleListener listener){
+        mCanScaleListener = listener;
     }
 
     /**
@@ -375,8 +379,8 @@ public class ScaleLayout extends FrameLayout{
      */
     public void doSetCenterView(float scale){
 
-        mCenterView.setPivotX(getPivotX());
-        mCenterView.setPivotY(getPivotY());
+        mCenterView.setPivotX(getCenterViewPivotX());
+        mCenterView.setPivotY(getCenterViewPivotY());
 
         mCenterView.setScaleX(scale);
         mCenterView.setScaleY(scale);
@@ -402,7 +406,6 @@ public class ScaleLayout extends FrameLayout{
             pivotY = (getMeasuredHeight() - getPaddingTop() - getPaddingBottom()) / 2f;
 
         }else{
-
             int totalDistance = mTopViewMoveDistance + mBottomViewMoveDistance;
             int temp = getMeasuredHeight() - getPaddingBottom() - getPaddingTop();
             if(totalDistance != 0) {
@@ -542,17 +545,13 @@ public class ScaleLayout extends FrameLayout{
      */
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
+
         boolean intercept = false;
 
-        if (!isEnabled()) {
-            return true;
-        }
-
-        if(!mSlideScaleEnable){
-            return false;
-        }
         switch (ev.getAction()) {
+
             case MotionEvent.ACTION_DOWN:
+
                 onTouchEvent(ev);
                 mInitialMotionX = ev.getX();
                 mInitialMotionY = ev.getY();
@@ -561,7 +560,13 @@ public class ScaleLayout extends FrameLayout{
             case MotionEvent.ACTION_MOVE:
                 final float deltaX = Math.abs(ev.getX() - mInitialMotionX);
                 final float deltaY = Math.abs(ev.getY() - mInitialMotionY);
-                intercept = deltaY > deltaX && deltaY > mTouchSlop;
+
+                if(mCanScaleListener != null
+                        && !mCanScaleListener.onGetCanScale(ev.getX() - mInitialMotionX > 0)){
+                    intercept = false;
+                }else {
+                    intercept = deltaY > deltaX && deltaY > mTouchSlop;
+                }
                 break;
         }
         return intercept;
@@ -575,31 +580,33 @@ public class ScaleLayout extends FrameLayout{
      * @return
      */
     @Override
-    public boolean onTouchEvent(MotionEvent ev)  {
+    public boolean onTouchEvent(MotionEvent ev) {
 
         if (!isEnabled() || !mSlideScaleEnable) {
             return super.onTouchEvent(ev);
         }
 
-        switch (ev.getActionMasked()){
+
+
+        switch (ev.getActionMasked()) {
 
             case MotionEvent.ACTION_DOWN:
-                mPointerId = ev.getPointerId(0);
                 downY = ev.getY();
                 return true;
 
             case MotionEvent.ACTION_MOVE:
-                final int pointerIndex = ev.findPointerIndex(mPointerId);
-                mCurrentY = ev.getY(pointerIndex);
-                if(Math.abs(mCurrentY - downY) > mTouchSlop){
+                if(mCanScaleListener != null && !mCanScaleListener.onGetCanScale(ev.getY() - downY > 0)){
+                    return super.onTouchEvent(ev);
+                }
+                if (Math.abs(ev.getY() - downY) > mTouchSlop) {
 
-                    mSlopLength += (mCurrentY - downY);
+                    mSlopLength += (ev.getY() - downY);
 
                     float scale;
-                    if(mSlideUpOrDownEnable) {
+                    if (mSlideUpOrDownEnable) {
 
                         scale = 1 + (0.8f * mSlopLength / getMeasuredHeight());
-                    }else{
+                    } else {
                         scale = 1 - (0.8f * mSlopLength / getMeasuredHeight());
                     }
 
@@ -609,38 +616,23 @@ public class ScaleLayout extends FrameLayout{
 
                     doSetScale();
 
-                    downY = mCurrentY;
+                    downY = ev.getY();
                 }
+
                 break;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
-                if(mCurrentScale > mMinScale && mCurrentScale < 1f){
+                if (mCurrentScale > mMinScale && mCurrentScale < 1f) {
 
                     float half = (1 - mMinScale) / 2;
 
-                    if(mCurrentScale >= mMinScale + half){
+                    if (mCurrentScale >= mMinScale + half) {
 
                         setState(STATE_CLOSE, true);
-                    }else{
+                    } else {
 
                         setState(STATE_OPEN, true);
                     }
-                }
-                break;
-
-            case MotionEvent.ACTION_POINTER_UP:
-
-                // 获取离开屏幕的手指的索引
-                int pointerIndexLeave = ev.getActionIndex();
-                int pointerIdLeave = ev.getPointerId(pointerIndexLeave);
-                if (mPointerId == pointerIdLeave) {
-
-                    // 离开屏幕的正是目前的有效手指,需要重新调整
-                    int reIndex = pointerIndexLeave == 0 ? 1 : 0;
-                    mPointerId = ev.getPointerId(reIndex);
-
-                    // 调整触摸位置，防止出现跳动
-                    mCurrentY = ev.getY(reIndex);
                 }
                 break;
         }
@@ -698,6 +690,17 @@ public class ScaleLayout extends FrameLayout{
     public interface OnStateChangedListener{
 
         void onStateChanged(boolean state);
+    }
+
+    /**
+     * 返回是否可以scale,主要为了适配部分有滑动冲突的view
+     * 如TouchImageView, 甚至webView等
+     * isScrollSown = true  代表向下，
+     * isScrollSown = false 代表向上
+     */
+    public interface OnGetCanScaleListener{
+
+        boolean onGetCanScale(boolean isScrollSown);
     }
 
 }

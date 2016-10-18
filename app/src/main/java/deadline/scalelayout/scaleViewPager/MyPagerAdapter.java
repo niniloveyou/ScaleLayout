@@ -4,12 +4,10 @@
  * @time 2015/05/28
  */
 package deadline.scalelayout.scaleViewPager;
-
+import java.util.List;
 import android.support.v4.view.PagerAdapter;
 import android.view.View;
 import android.view.ViewGroup;
-
-import java.util.List;
 
 public class MyPagerAdapter extends PagerAdapter {
 
