@@ -2,6 +2,9 @@
 a viewgroup which can scale child view dynamically .
 you can set top View, bottom View, center View as your wish
 
+![](https://github.com/niniloveyou/ScaleLayout/blob/master/scale_gif1.gif)
+
+![](https://github.com/niniloveyou/ScaleLayout/blob/master/scale_gif2.gif)
 #System Requirement
 
 Android API 11+， Because of the use of ValueAnimation， if you want use it on API 8, please use NineoldAndroids library in your project.
@@ -90,3 +93,7 @@ Android API 11+， Because of the use of ValueAnimation， if you want use it on
     }
 
     
+
+
+#我的博客
+http://www.jianshu.com/users/25e80ace21b8/latest_articles
