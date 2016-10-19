@@ -493,7 +493,6 @@ public class ScaleLayout extends FrameLayout{
         setState(mState, false);
     }
 
-
     /**
      * 使得centerView 大小等同ScaleLayout的大小
      * 如果不想这样处理，也可以在触摸事件中使用TouchDelegate
@@ -515,7 +514,6 @@ public class ScaleLayout extends FrameLayout{
 
         mCenterView.measure(childWidthMeasureSpec, childHeightMeasureSpec);
     }
-
 
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
@@ -539,7 +537,8 @@ public class ScaleLayout extends FrameLayout{
      * 都会先执行onInterceptTouchEvent的（move, up）
      * 继而分发给子view的dispatchTouchEvent(move, up)，
      * 然后在onInterceptTouchEvent（move）事件中判断是否满足滑动条件
-     * 满足就拦截，拦截了之后move up事件就会都分发给OnTouchEvent, 否则如上继续分发给子V
+     * 满足就拦截，拦截了之后move up事件就会都分发给自身的OnTouchEvent,
+     * 否则如上继续分发给子View
      * @param ev
      * @return
      */
@@ -675,8 +674,8 @@ public class ScaleLayout extends FrameLayout{
 
     /**
      * 当centerView 的scale变化的时候，通过这个
-     * 接口可以做一些同步的事情，比如，你有一个其他的view要根据
-     * centerView的变化而变化
+     * 接口外部的View可以做一些同步的事情，
+     * 比如，你有一个其他的view要根据centerView的变化而变化
      */
     public interface OnScaleChangedListener{
 
